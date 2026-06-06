@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#f8d57a" />
+  <title>あついよ〜！わんこレスキュー</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="app" aria-label="あついよ〜！わんこレスキュー">
+    <header class="topbar">
+      <button id="resetBtn" class="round-button" type="button" aria-label="はじめから">
+        <span class="icon">⌂</span><span>ホーム</span>
+      </button>
+      <h1>あついよ〜！<span>わんこレスキュー</span></h1>
+      <div class="player-chip" aria-live="polite">
+        <span>プレイヤー</span><strong id="playerNameLabel">なまえなし</strong>
+      </div>
+      <div class="top-actions">
+        <button id="scoreBtn" class="round-button score" type="button" aria-label="今日のランキング">
+          <span class="icon">★</span><span>きろく</span>
+        </button>
+        <button id="soundBtn" class="round-button" type="button" aria-label="音の切り替え">
+          <span class="icon">♪</span><span>おと</span>
+        </button>
+        <button id="helpBtn" class="round-button help" type="button" aria-label="ヘルプ">
+          <span class="icon">?</span><span>ヘルプ</span>
+        </button>
+      </div>
+    </header>
+
+    <section class="game-area">
+      <aside class="left-panel">
+        <div class="thermo-card">
+          <p class="label">きおん</p>
+          <div class="thermo-wrap">
+            <div class="thermo">
+              <div id="thermoFill" class="thermo-fill"></div>
+            </div>
+            <div class="temperature"><span id="tempValue">32</span><small>℃</small></div>
+          </div>
+          <p id="roomMessage" class="mini-warning">おへやが あついよ！</p>
+        </div>
+      </aside>
+
+      <section class="room" id="room" aria-live="polite">
+        <div class="sunbeams"></div>
+        <div class="window" id="windowScene">
+          <div class="sun"></div>
+          <div class="sky-cloud cloud-a"></div>
+          <div class="sky-cloud cloud-b"></div>
+          <div class="curtain left"></div>
+          <div class="curtain right"></div>
+        </div>
+        <div class="clock">12</div>
+        <div class="picture">🐶♡</div>
+        <div class="plant plant-left">🌿</div>
+        <div class="plant plant-right">🪴</div>
+        <div class="shelf">
+          <div></div><div></div><div></div>
+          <span>🧸</span>
+        </div>
+        <div class="dresser"></div>
+        <div class="dog-bed">🐾</div>
+        <div class="food-bowl"></div>
+        <div class="standing-fan" id="roomFan">
+          <div class="fan-head">✳</div><div class="fan-neck"></div><div class="fan-base"></div>
+        </div>
+        <div class="rug"></div>
+        <div class="dog" id="dog">
+          <div id="speech" class="speech">あついよ〜</div>
+          <div class="heat-lines">⌇⌇⌇</div>
+          <div class="dog-body">
+            <div class="ear left-ear"></div>
+            <div class="ear right-ear"></div>
+            <div class="face">
+              <span class="eye left-eye"></span>
+              <span class="eye right-eye"></span>
+              <span class="nose"></span>
+              <span class="tongue"></span>
+              <span class="sweat s1">💧</span>
+              <span class="sweat s2">💧</span>
+              <span class="sweat s3">💧</span>
+            </div>
+            <div class="paw p1"></div><div class="paw p2"></div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="right-panel">
+        <div class="meter-card">
+          <h2>げんきメーター</h2>
+          <div class="meter"><div id="energyFill" class="meter-fill"></div></div>
+          <p id="energyText">とっても げんきが ないよ！</p>
+        </div>
+        <div class="mission-card">
+          <h2>⭐ アイテム</h2>
+          <p>アイテムを えらんで<br>わんこを たすけよう！</p>
+          <hr>
+          <p class="hint">💡 つかいかたで<br>けっかが かわるよ</p>
+        </div>
+        <div class="score-card">
+          <h2>今日のスコア</h2>
+          <p><span id="scoreValue">0</span>点</p>
+          <button id="saveScoreBtn" type="button">記録する</button>
+          <button id="showRankingBtn" type="button">ランキング</button>
+        </div>
+      </aside>
+    </section>
+
+    <section class="drawer">
+      <div class="drawer-head">
+        <button id="toggleItems" type="button" class="tab-button">アイテム ▲</button>
+        <p>アイテムをえらんで、つかいかたをきめよう！（ドラッグなし・タップでOK）</p>
+      </div>
+      <div id="itemsGrid" class="items-grid"></div>
+    </section>
+  </main>
+
+
+
+  <dialog id="nameDialog" class="name-dialog">
+    <form id="nameForm" method="dialog">
+      <h2>プレイヤーの なまえ</h2>
+      <p>今日のランキングに のせる なまえを 入れよう。</p>
+      <input id="playerNameInput" maxlength="12" autocomplete="off" placeholder="れい：Aさん" />
+      <div class="dialog-actions">
+        <button id="startGameBtn" value="ok" type="submit">はじめる</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="rankingDialog" class="ranking-dialog">
+    <form method="dialog">
+      <h2>今日のランキング</h2>
+      <p class="ranking-date" id="rankingDate"></p>
+      <ol id="rankingList" class="ranking-list"></ol>
+      <div class="dialog-actions two">
+        <button id="changeNameBtn" type="button">なまえを かえる</button>
+        <button value="ok" type="submit">とじる</button>
+      </div>
+      <p class="note">※このランキングは、このiPad・このブラウザの中に保存されます。</p>
+    </form>
+  </dialog>
+
+  <dialog id="choiceDialog" class="choice-dialog">
+    <form method="dialog">
+      <h2 id="choiceTitle">どうつかう？</h2>
+      <p id="choiceLead"></p>
+      <div id="choiceButtons" class="choice-buttons"></div>
+      <button class="cancel" value="cancel" type="submit">やめる</button>
+    </form>
+  </dialog>
+
+  <dialog id="resultDialog" class="result-dialog">
+    <form method="dialog">
+      <h2 id="resultTitle">けっか</h2>
+      <p id="resultText"></p>
+      <div class="result-stats">
+        <span id="tempChange"></span>
+        <span id="energyChange"></span>
+      </div>
+      <button id="resultClose" value="ok" type="submit">つぎへ</button>
+    </form>
+  </dialog>
+
+  <dialog id="helpDialog" class="help-dialog">
+    <form method="dialog">
+      <h2>あそびかた</h2>
+      <p>暑くてしんどそうなわんこを、アイテムで助けます。</p>
+      <ol>
+        <li>下の「アイテム」から1つ選びます。</li>
+        <li>「どう使うか」を選びます。</li>
+        <li>温度やげんきメーターの変化を見ます。</li>
+      </ol>
+      <p>同じアイテムでも、使い方で結果が変わります。</p>
+      <button value="ok" type="submit">わかった</button>
+    </form>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>
