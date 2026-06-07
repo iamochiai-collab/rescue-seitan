@@ -2,6 +2,7 @@ const $ = (selector) => document.querySelector(selector);
 const itemPath = './assets/items/';
 const bgPath = './assets/backgrounds/';
 const dogPath = './assets/dogs/';
+const actionPath = './assets/actions/';
 
 const items = [
   { name:'うちわ', img:'uchiwa.png', choices:[
@@ -93,6 +94,54 @@ const items = [
   ]}
 ];
 
+const actionSprites = {
+  'うちわ|わんこに あおぐ': 'use_uchiwa.png',
+  'うちわ|まどに あおぐ': 'wind_uchiwa.png',
+  '扇風機|わんこに むける': 'fan_to_dog.png',
+  '扇風機|へやの空気をまわす': 'fan_to_room.png',
+  '扇風機|暑い場所にむける': 'fan_to_room.png',
+  'みず|のませる': 'drink_water.png',
+  'みず|タオルをぬらす': 'use_cold_towel.png',
+  'みず|床にこぼす': 'spill_water.png',
+  'おちゃ|冷たいお茶にする': 'drink_cold_tea.png',
+  'おちゃ|熱いお茶をあげる': 'hot_tea.png',
+  'カーテン|しめる': 'close_curtain.png',
+  'カーテン|あける': 'open_curtain.png',
+  'まど|あける': 'open_window.png',
+  'まど|しめきる': 'close_window.png',
+  'れいタオル|首の近くにあてる': 'cold_towel_head.png',
+  'れいタオル|ずっと強くあてる': 'cold_towel_head.png',
+  'ほれいざい|タオルでつつむ': 'icepack_towel.png',
+  'ほれいざい|そのままあてる': 'use_icepack.png',
+  'こおり|近くにおく': 'near_ice.png',
+  'こおり|食べさせる': 'ice_cubes.png',
+  'ひかげシート|窓の近くにつける': 'shade_sheet.png',
+  'ひかげシート|床におく': 'shade_sheet.png',
+  'ぼうし|外に出る時にかぶる': 'wear_hat.png',
+  'ぼうし|部屋でずっとかぶる': 'wear_hat.png',
+  '毛布|わんこにかける': 'blanket_on_dog.png',
+  '毛布|窓にかける': 'blanket_on_window.png',
+  'ドライヤー|温かい風': 'dryer_warm_bad.png',
+  'ドライヤー|冷たい風': 'dryer_cool.png',
+  'エアコン|冷房にする': 'aircon_cool.png',
+  'エアコン|暖房にする': 'aircon_warm_bad.png',
+  'エアコン|切る': 'room_curtain_closed_result.png',
+  'ライト|つける': 'light_hot.png',
+  'ライト|けす': 'room_curtain_closed_result.png',
+  'ストーブ|つける': 'stove_hot.png',
+  'ストーブ|けす': 'room_curtain_closed_result.png',
+  'こたつ|入れる': 'kotatsu_hot.png',
+  'こたつ|片づける': 'room_curtain_closed_result.png',
+  'あついスープ|食べさせる': 'hot_soup.png',
+  'あついスープ|やめておく': 'hold_water.png',
+  'ダウンジャケット|着せる': 'down_jacket_hot.png',
+  'ダウンジャケット|日よけにする': 'shade_sheet.png',
+  'きりふき|少しふきかける': 'spray_mist.png',
+  'きりふき|たくさんまく': 'spill_water.png',
+  'こおった水|近くにおく': 'frozen_bottle.png',
+  'こおった水|ずっと体にあてる': 'frozen_bottle.png'
+};
+
 const state = {
   player: '',
   temp: 32,
@@ -113,33 +162,34 @@ const state = {
     dryer: 'off'
   },
   usedActions: new Set(),
-  pendingDrop: null
+  pendingDrop: null,
+  effects: {}
 };
 
 const actionRules = {
-  'カーテン|しめる': { requires: { curtain: 'open' }, set: { curtain: 'closed' }, bg: 'room_curtain_closed.png', unavailable: 'カーテンはもう閉まっています。次は「あける」ならできます。' },
-  'カーテン|あける': { requires: { curtain: 'closed' }, set: { curtain: 'open', blanketWindow: false }, bg: 'room_hot.png', unavailable: 'カーテンはもう開いています。次は「しめる」ならできます。' },
-  'まど|あける': { requires: { window: 'closed' }, set: { window: 'open' }, bg: 'room_window_open.png', unavailable: 'まどはもう開いています。次は「しめきる」ならできます。' },
-  'まど|しめきる': { requires: { window: 'open' }, set: { window: 'closed' }, bg: 'room_hot.png', unavailable: 'まどはもう閉まっています。次は「あける」ならできます。' },
+  'カーテン|しめる': { requires: { curtain: 'open' }, set: { curtain: 'closed' }, effectSlot:'curtain', effect:{temp:-2, energy:8}, bg: 'room_curtain_closed.png', unavailable: 'カーテンはもう閉まっています。次は「あける」ならできます。' },
+  'カーテン|あける': { requires: { curtain: 'closed' }, set: { curtain: 'open', blanketWindow: false }, effectSlot:'curtain', effect:{temp:0, energy:0}, bg: 'room_hot.png', unavailable: 'カーテンはもう開いています。次は「しめる」ならできます。' },
+  'まど|あける': { requires: { window: 'closed' }, set: { window: 'open' }, effectSlot:'window', effect:{temp:-1, energy:5}, bg: 'room_window_open.png', unavailable: 'まどはもう開いています。次は「しめきる」ならできます。' },
+  'まど|しめきる': { requires: { window: 'open' }, set: { window: 'closed' }, effectSlot:'window', effect:{temp:0, energy:0}, bg: 'room_hot.png', unavailable: 'まどはもう閉まっています。次は「あける」ならできます。' },
 
-  '扇風機|わんこに むける': { requiresNot: { fan: 'dog' }, set: { fan: 'dog' }, unavailable: '扇風機はもうわんこに向いています。別の向きに変えてみよう。' },
-  '扇風機|へやの空気をまわす': { requiresNot: { fan: 'room' }, set: { fan: 'room' }, unavailable: '扇風機はもう部屋の空気を回しています。別の向きに変えてみよう。' },
-  '扇風機|暑い場所にむける': { requiresNot: { fan: 'wrong' }, set: { fan: 'wrong' }, unavailable: '扇風機はもう暑い場所に向いています。別の向きに変えてみよう。' },
+  '扇風機|わんこに むける': { requiresNot: { fan: 'dog' }, set: { fan: 'dog' }, effectSlot:'fan', effect:{temp:-1, energy:12}, unavailable: '扇風機はもうわんこに向いています。別の向きに変えてみよう。' },
+  '扇風機|へやの空気をまわす': { requiresNot: { fan: 'room' }, set: { fan: 'room' }, effectSlot:'fan', effect:{temp:0, energy:6}, unavailable: '扇風機はもう部屋の空気を回しています。別の向きに変えてみよう。' },
+  '扇風機|暑い場所にむける': { requiresNot: { fan: 'wrong' }, set: { fan: 'wrong' }, effectSlot:'fan', effect:{temp:0, energy:0}, unavailable: '扇風機はもう暑い場所に向いています。別の向きに変えてみよう。' },
 
-  'エアコン|冷房にする': { requiresNot: { aircon: 'cool' }, set: { aircon: 'cool' }, unavailable: 'エアコンはもう冷房になっています。同じ操作はできません。' },
-  'エアコン|暖房にする': { requiresNot: { aircon: 'warm' }, set: { aircon: 'warm' }, unavailable: 'エアコンはもう暖房になっています。同じ操作はできません。' },
-  'エアコン|切る': { requiresNot: { aircon: 'off' }, set: { aircon: 'off' }, unavailable: 'エアコンはもう切れています。' },
+  'エアコン|冷房にする': { requiresNot: { aircon: 'cool' }, set: { aircon: 'cool' }, effectSlot:'aircon', effect:{temp:-3, energy:15}, unavailable: 'エアコンはもう冷房になっています。同じ操作はできません。' },
+  'エアコン|暖房にする': { requiresNot: { aircon: 'warm' }, set: { aircon: 'warm' }, effectSlot:'aircon', effect:{temp:3, energy:-12}, unavailable: 'エアコンはもう暖房になっています。同じ操作はできません。' },
+  'エアコン|切る': { requiresNot: { aircon: 'off' }, set: { aircon: 'off' }, effectSlot:'aircon', effect:{temp:0, energy:0}, unavailable: 'エアコンはもう切れています。' },
 
-  'ドライヤー|温かい風': { requiresNot: { dryer: 'warm' }, set: { dryer: 'warm' }, unavailable: 'ドライヤーはもう温かい風で使いました。' },
-  'ドライヤー|冷たい風': { requiresNot: { dryer: 'cool' }, set: { dryer: 'cool' }, unavailable: 'ドライヤーはもう冷たい風で使いました。' },
-  'ライト|つける': { requires: { light: 'off' }, set: { light: 'on' }, unavailable: 'ライトはもうついています。次は「けす」ならできます。' },
-  'ライト|けす': { requires: { light: 'on' }, set: { light: 'off' }, unavailable: 'ライトはもう消えています。次は「つける」ならできます。' },
-  'ストーブ|つける': { requires: { stove: 'off' }, set: { stove: 'on' }, unavailable: 'ストーブはもうついています。次は「けす」ならできます。' },
-  'ストーブ|けす': { requires: { stove: 'on' }, set: { stove: 'off' }, unavailable: 'ストーブはもう消えています。' },
-  'こたつ|入れる': { requires: { kotatsu: 'off' }, set: { kotatsu: 'on' }, unavailable: 'もうこたつに入っています。' },
-  'こたつ|片づける': { requires: { kotatsu: 'on' }, set: { kotatsu: 'off' }, unavailable: 'こたつはもう片づいています。' },
-  '毛布|わんこにかける': { requires: { blanketDog: false }, set: { blanketDog: true }, unavailable: '毛布はもうわんこにかかっています。' },
-  '毛布|窓にかける': { requires: { blanketWindow: false }, set: { blanketWindow: true, curtain: 'closed' }, bg: 'room_curtain_closed.png', unavailable: '毛布はもう窓にかかっています。' }
+  'ドライヤー|温かい風': { requiresNot: { dryer: 'warm' }, set: { dryer: 'warm' }, effectSlot:'dryer', effect:{temp:2, energy:-10}, unavailable: 'ドライヤーはもう温かい風で使いました。' },
+  'ドライヤー|冷たい風': { requiresNot: { dryer: 'cool' }, set: { dryer: 'cool' }, effectSlot:'dryer', effect:{temp:-1, energy:6}, unavailable: 'ドライヤーはもう冷たい風で使いました。' },
+  'ライト|つける': { requires: { light: 'off' }, set: { light: 'on' }, effectSlot:'light', effect:{temp:1, energy:-3}, unavailable: 'ライトはもうついています。次は「けす」ならできます。' },
+  'ライト|けす': { requires: { light: 'on' }, set: { light: 'off' }, effectSlot:'light', effect:{temp:0, energy:0}, unavailable: 'ライトはもう消えています。次は「つける」ならできます。' },
+  'ストーブ|つける': { requires: { stove: 'off' }, set: { stove: 'on' }, effectSlot:'stove', effect:{temp:3, energy:-15}, unavailable: 'ストーブはもうついています。次は「けす」ならできます。' },
+  'ストーブ|けす': { requires: { stove: 'on' }, set: { stove: 'off' }, effectSlot:'stove', effect:{temp:0, energy:0}, unavailable: 'ストーブはもう消えています。' },
+  'こたつ|入れる': { requires: { kotatsu: 'off' }, set: { kotatsu: 'on' }, effectSlot:'kotatsu', effect:{temp:2, energy:-12}, unavailable: 'もうこたつに入っています。' },
+  'こたつ|片づける': { requires: { kotatsu: 'on' }, set: { kotatsu: 'off' }, effectSlot:'kotatsu', effect:{temp:0, energy:0}, unavailable: 'こたつはもう片づいています。' },
+  '毛布|わんこにかける': { requires: { blanketDog: false }, set: { blanketDog: true }, effectSlot:'blanketDog', effect:{temp:1, energy:-10}, unavailable: '毛布はもうわんこにかかっています。' },
+  '毛布|窓にかける': { requires: { blanketWindow: false }, set: { blanketWindow: true, curtain: 'closed' }, effectSlot:'blanketWindow', effect:{temp:-1, energy:6}, bg: 'room_curtain_closed.png', unavailable: '毛布はもう窓にかかっています。' }
 };
 
 const repeatableActions = new Set([
@@ -363,37 +413,56 @@ function applyChoice(choice, itemName, itemImg){
   applyRule(rule);
   state.usedActions.add(key);
 
-  state.temp = Math.max(20, Math.min(40, state.temp + tempDelta));
-  state.energy = Math.max(0, Math.min(100, state.energy + energyDelta));
+  let appliedTemp = tempDelta;
+  let appliedEnergy = energyDelta;
+  if(rule?.effectSlot){
+    const previous = state.effects[rule.effectSlot] || {temp:0, energy:0};
+    const next = rule.effect || {temp:tempDelta, energy:energyDelta};
+    appliedTemp = next.temp - previous.temp;
+    appliedEnergy = next.energy - previous.energy;
+    state.effects[rule.effectSlot] = next;
+  }
+
+  state.temp = Math.max(20, Math.min(40, state.temp + appliedTemp));
+  state.energy = Math.max(0, Math.min(100, state.energy + appliedEnergy));
   state.used += 1;
   state.score = Math.max(0, Math.round(state.energy * 1.25 + (32 - state.temp) * 14 - state.used * 2));
 
   const nextBg = backgroundForRoom(rule?.bg || bgFromChoice);
   $('#roomImage').src = bgPath + nextBg;
 
-  placeDroppedItem(itemImg || state.pendingDrop?.img, itemName, state.pendingDrop);
+  const actionSprite = actionSprites[key];
+  placeDroppedItem(itemImg || state.pendingDrop?.img, itemName, state.pendingDrop, actionSprite);
   state.pendingDrop = null;
 
   toast(message);
   updateUI();
 }
 
-function placeDroppedItem(img, name, drop){
-  if(!img || !drop) return;
+function placeDroppedItem(img, name, drop, actionSprite){
+  if(!img && !actionSprite) return;
   const layer = $('#placedItems');
   const el = document.createElement('img');
-  el.className = 'placed-item';
-  el.src = itemPath + img;
+  el.className = actionSprite ? 'placed-result' : 'placed-item';
+  el.src = actionSprite ? actionPath + actionSprite : itemPath + img;
   el.alt = name || '';
   const playRect = $('.play-area').getBoundingClientRect();
-  const x = Math.max(45, Math.min(playRect.width - 45, drop.x));
-  const y = Math.max(55, Math.min(playRect.height - 45, drop.y));
+  let x, y;
+  if(drop){
+    x = Math.max(70, Math.min(playRect.width - 70, drop.x));
+    y = Math.max(80, Math.min(playRect.height - 70, drop.y));
+  }else{
+    const dogRect = $('#dogImage').getBoundingClientRect();
+    x = (dogRect.left + dogRect.width/2) - playRect.left;
+    y = (dogRect.top + dogRect.height/2) - playRect.top;
+  }
   el.style.left = `${x}px`;
   el.style.top = `${y}px`;
   layer.appendChild(el);
 
-  // 画面が散らかりすぎないように、置いたアイテムは一定数だけ残す
-  while(layer.children.length > 7){
+  // 結果イラストは学習表示として大きめ、古いものは残しすぎない
+  const maxItems = 4;
+  while(layer.children.length > maxItems){
     layer.firstElementChild.remove();
   }
 }

@@ -89,3 +89,19 @@ button{border:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
   cursor:not-allowed;
   transform:none!important;
 }
+
+/* ドロップ後の結果イラスト */
+.placed-result{
+  position:absolute;
+  width:min(250px,22vw);
+  height:auto;
+  max-height:190px;
+  object-fit:contain;
+  transform:translate(-50%,-50%);
+  filter:drop-shadow(0 10px 8px rgba(55,31,11,.25));
+  animation:popResult .22s ease-out;
+  border-radius:18px;
+  background:rgba(255,255,255,.78);
+  padding:4px;
+}
+@keyframes popResult{from{opacity:0;transform:translate(-50%,-50%) scale(.55)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
