@@ -28,7 +28,7 @@ const items = [
   ]},
   { name:'まど', img:'window_open.png', choices:[
     ['あける', -1, 5, '風が入って、少しすずしい！', 'room_window_open.png'],
-    ['しめきる', 1, -4, '空気がこもってしまった。', 'room_curtain_closed.png']
+    ['しめきる', 1, -4, '空気がこもってしまった。', 'room_hot.png']
   ]},
   { name:'れいタオル', img:'cold_towel.png', choices:[
     ['首の近くにあてる', -1, 12, 'ひんやりして、らくになった！'],
@@ -52,7 +52,7 @@ const items = [
   ]},
   { name:'毛布', img:'blanket.png', choices:[
     ['わんこにかける', 1, -10, '毛布でさらに暑くなった！'],
-    ['窓にかける', -1, 6, '日ざしを少しふせげた！']
+    ['窓にかける', -1, 6, '日ざしを少しふせげた！', 'room_curtain_closed.png']
   ]},
   { name:'ドライヤー', img:'dryer.png', choices:[
     ['温かい風', 2, -10, '熱い風で、もっと暑くなった！'],
@@ -60,7 +60,8 @@ const items = [
   ]},
   { name:'エアコン', img:'aircon.png', choices:[
     ['冷房にする', -3, 15, '部屋がすずしくなった！'],
-    ['暖房にする', 3, -12, '今は暖房ではもっと暑い！']
+    ['暖房にする', 3, -12, '今は暖房ではもっと暑い！'],
+    ['切る', 1, -2, 'エアコンを切りました。暑い日は様子を見よう。']
   ]},
   { name:'ライト', img:'light.png', choices:[
     ['つける', 1, -3, '明るくなったけど、少し暑い。'],
@@ -68,7 +69,7 @@ const items = [
   ]},
   { name:'ストーブ', img:'stove.png', choices:[
     ['つける', 3, -15, 'これは冬の道具！今は暑すぎる。'],
-    ['つけない', 0, 2, '使わない判断も大切！']
+    ['けす', -1, 4, 'ストーブを消しました。暑い日は使わない判断も大切！']
   ]},
   { name:'こたつ', img:'kotatsu.png', choices:[
     ['入れる', 2, -12, 'こたつは今は暑い！'],
@@ -107,41 +108,64 @@ const state = {
     kotatsu: 'off',
     aircon: 'off',
     blanketDog: false,
-    blanketWindow: false
-  }
+    blanketWindow: false,
+    fan: 'off',
+    dryer: 'off'
+  },
+  usedActions: new Set(),
+  pendingDrop: null
 };
 
 const actionRules = {
   'カーテン|しめる': { requires: { curtain: 'open' }, set: { curtain: 'closed' }, bg: 'room_curtain_closed.png', unavailable: 'カーテンはもう閉まっています。次は「あける」ならできます。' },
-  'カーテン|あける': { requires: { curtain: 'closed' }, set: { curtain: 'open' }, bg: 'room_hot.png', unavailable: 'カーテンはもう開いています。次は「しめる」ならできます。' },
+  'カーテン|あける': { requires: { curtain: 'closed' }, set: { curtain: 'open', blanketWindow: false }, bg: 'room_hot.png', unavailable: 'カーテンはもう開いています。次は「しめる」ならできます。' },
   'まど|あける': { requires: { window: 'closed' }, set: { window: 'open' }, bg: 'room_window_open.png', unavailable: 'まどはもう開いています。次は「しめきる」ならできます。' },
   'まど|しめきる': { requires: { window: 'open' }, set: { window: 'closed' }, bg: 'room_hot.png', unavailable: 'まどはもう閉まっています。次は「あける」ならできます。' },
+
+  '扇風機|わんこに むける': { requiresNot: { fan: 'dog' }, set: { fan: 'dog' }, unavailable: '扇風機はもうわんこに向いています。別の向きに変えてみよう。' },
+  '扇風機|へやの空気をまわす': { requiresNot: { fan: 'room' }, set: { fan: 'room' }, unavailable: '扇風機はもう部屋の空気を回しています。別の向きに変えてみよう。' },
+  '扇風機|暑い場所にむける': { requiresNot: { fan: 'wrong' }, set: { fan: 'wrong' }, unavailable: '扇風機はもう暑い場所に向いています。別の向きに変えてみよう。' },
+
+  'エアコン|冷房にする': { requiresNot: { aircon: 'cool' }, set: { aircon: 'cool' }, unavailable: 'エアコンはもう冷房になっています。同じ操作はできません。' },
+  'エアコン|暖房にする': { requiresNot: { aircon: 'warm' }, set: { aircon: 'warm' }, unavailable: 'エアコンはもう暖房になっています。同じ操作はできません。' },
+  'エアコン|切る': { requiresNot: { aircon: 'off' }, set: { aircon: 'off' }, unavailable: 'エアコンはもう切れています。' },
+
+  'ドライヤー|温かい風': { requiresNot: { dryer: 'warm' }, set: { dryer: 'warm' }, unavailable: 'ドライヤーはもう温かい風で使いました。' },
+  'ドライヤー|冷たい風': { requiresNot: { dryer: 'cool' }, set: { dryer: 'cool' }, unavailable: 'ドライヤーはもう冷たい風で使いました。' },
   'ライト|つける': { requires: { light: 'off' }, set: { light: 'on' }, unavailable: 'ライトはもうついています。次は「けす」ならできます。' },
   'ライト|けす': { requires: { light: 'on' }, set: { light: 'off' }, unavailable: 'ライトはもう消えています。次は「つける」ならできます。' },
-  'ストーブ|つける': { requires: { stove: 'off' }, set: { stove: 'on' }, unavailable: 'ストーブはもうついています。' },
-  'ストーブ|つけない': { requires: { stove: 'on' }, set: { stove: 'off' }, unavailable: 'ストーブはついていません。' },
+  'ストーブ|つける': { requires: { stove: 'off' }, set: { stove: 'on' }, unavailable: 'ストーブはもうついています。次は「けす」ならできます。' },
+  'ストーブ|けす': { requires: { stove: 'on' }, set: { stove: 'off' }, unavailable: 'ストーブはもう消えています。' },
   'こたつ|入れる': { requires: { kotatsu: 'off' }, set: { kotatsu: 'on' }, unavailable: 'もうこたつに入っています。' },
   'こたつ|片づける': { requires: { kotatsu: 'on' }, set: { kotatsu: 'off' }, unavailable: 'こたつはもう片づいています。' },
-  'エアコン|冷房にする': { requiresNot: { aircon: 'cool' }, set: { aircon: 'cool' }, unavailable: 'エアコンはもう冷房になっています。' },
-  'エアコン|暖房にする': { requiresNot: { aircon: 'warm' }, set: { aircon: 'warm' }, unavailable: 'エアコンはもう暖房になっています。' },
   '毛布|わんこにかける': { requires: { blanketDog: false }, set: { blanketDog: true }, unavailable: '毛布はもうわんこにかかっています。' },
   '毛布|窓にかける': { requires: { blanketWindow: false }, set: { blanketWindow: true, curtain: 'closed' }, bg: 'room_curtain_closed.png', unavailable: '毛布はもう窓にかかっています。' }
 };
 
+const repeatableActions = new Set([
+  // 基本は同じ行動を何回もできない。必要になったらここへ追加。
+]);
+
+let activeDrag = null;
+
 function getRule(itemName, choiceLabel){
   return actionRules[`${itemName}|${choiceLabel}`];
 }
+function actionKey(itemName, choiceLabel){
+  return `${itemName}|${choiceLabel}`;
+}
 
-function isChoiceAvailable(rule){
-  if(!rule) return true;
+function isChoiceAvailable(rule, key){
+  if(key && state.usedActions.has(key) && !repeatableActions.has(key)) return false;
+  if(!rule) return !(key && state.usedActions.has(key) && !repeatableActions.has(key));
   if(rule.requires){
-    for(const [key, value] of Object.entries(rule.requires)){
-      if(state.room[key] !== value) return false;
+    for(const [key2, value] of Object.entries(rule.requires)){
+      if(state.room[key2] !== value) return false;
     }
   }
   if(rule.requiresNot){
-    for(const [key, value] of Object.entries(rule.requiresNot)){
-      if(state.room[key] === value) return false;
+    for(const [key2, value] of Object.entries(rule.requiresNot)){
+      if(state.room[key2] === value) return false;
     }
   }
   return true;
@@ -150,6 +174,11 @@ function isChoiceAvailable(rule){
 function applyRule(rule){
   if(!rule || !rule.set) return;
   Object.assign(state.room, rule.set);
+}
+
+function unavailableMessage(rule, key){
+  if(key && state.usedActions.has(key) && !repeatableActions.has(key)) return 'その行動はもう試しました。別の方法を考えよう。';
+  return rule?.unavailable || '今はその使い方はできません。';
 }
 
 function backgroundForRoom(defaultBg){
@@ -172,12 +201,22 @@ function init(){
   $('#helpButton').addEventListener('click', ()=>$('#helpModal').classList.remove('hidden'));
   $('#closeHelpButton').addEventListener('click', ()=>$('#helpModal').classList.add('hidden'));
   $('#toggleDrawerButton').addEventListener('click', toggleDrawer);
-  $('#cancelChoiceButton').addEventListener('click', ()=>$('#choiceModal').classList.add('hidden'));
+  $('#cancelChoiceButton').addEventListener('click', ()=>{ state.pendingDrop=null; $('#choiceModal').classList.add('hidden'); });
   $('#saveScoreButton').addEventListener('click', recordScore);
   $('#rankingButton').addEventListener('click', showRanking);
   $('#closeRankingButton').addEventListener('click', ()=>$('#rankingModal').classList.add('hidden'));
+  ensurePlacedLayer();
   renderItems();
   updateUI();
+}
+
+function ensurePlacedLayer(){
+  if(!$('#placedItems')){
+    const layer = document.createElement('div');
+    layer.id = 'placedItems';
+    layer.className = 'placed-items';
+    $('.play-area').appendChild(layer);
+  }
 }
 
 function startGame(){
@@ -205,42 +244,124 @@ function renderItems(){
   items.forEach((item, index)=>{
     const button = document.createElement('button');
     button.className = 'item-card';
-    button.innerHTML = `<img src="${itemPath}${item.img}" alt=""><span>${item.name}</span>`;
-    button.addEventListener('click', ()=>openChoices(index));
+    button.dataset.index = index;
+    button.innerHTML = `<img src="${itemPath}${item.img}" alt="${item.name}"><span>${item.name}</span>`;
+    button.addEventListener('click', (e)=>{
+      if(button.dataset.dragged === 'true') return;
+      state.pendingDrop = null;
+      openChoices(index);
+    });
+    setupPointerDrag(button, index, item);
     grid.appendChild(button);
   });
+}
+
+function setupPointerDrag(card, index, item){
+  let startX=0, startY=0, dragging=false, ghost=null;
+
+  card.addEventListener('pointerdown', (e)=>{
+    if(e.button !== undefined && e.button !== 0) return;
+    startX = e.clientX; startY = e.clientY; dragging = false;
+    card.dataset.dragged = 'false';
+    activeDrag = {index, item, x:startX, y:startY};
+    card.setPointerCapture?.(e.pointerId);
+  });
+
+  card.addEventListener('pointermove', (e)=>{
+    if(!activeDrag || activeDrag.index !== index) return;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    if(!dragging && Math.hypot(dx,dy) > 10){
+      dragging = true;
+      card.dataset.dragged = 'true';
+      ghost = document.createElement('div');
+      ghost.className = 'drag-ghost';
+      ghost.innerHTML = `<img src="${itemPath}${item.img}" alt=""><span>${item.name}</span>`;
+      document.body.appendChild(ghost);
+      $('.dog-image').classList.add('dog-drop-ready');
+    }
+    if(dragging && ghost){
+      ghost.style.left = `${e.clientX}px`;
+      ghost.style.top = `${e.clientY}px`;
+      const overDog = isPointOverElement(e.clientX, e.clientY, $('#dogImage'));
+      $('.dog-image').classList.toggle('dog-drop-hover', overDog);
+    }
+  });
+
+  card.addEventListener('pointerup', (e)=>{
+    card.releasePointerCapture?.(e.pointerId);
+    const wasDragging = dragging;
+    if(ghost) ghost.remove();
+    $('.dog-image').classList.remove('dog-drop-ready','dog-drop-hover');
+    activeDrag = null;
+
+    if(wasDragging){
+      const playRect = $('.play-area').getBoundingClientRect();
+      const overDog = isPointOverElement(e.clientX, e.clientY, $('#dogImage'));
+      const inPlay = e.clientX >= playRect.left && e.clientX <= playRect.right && e.clientY >= playRect.top && e.clientY <= playRect.bottom;
+      if(overDog || inPlay){
+        state.pendingDrop = {
+          x: e.clientX - playRect.left,
+          y: e.clientY - playRect.top,
+          img: item.img,
+          name: item.name,
+          onDog: overDog
+        };
+        openChoices(index);
+      }else{
+        toast('わんこの近くに持っていこう。');
+      }
+      window.setTimeout(()=>{ card.dataset.dragged='false'; }, 50);
+    }
+  });
+
+  card.addEventListener('pointercancel', ()=>{
+    if(ghost) ghost.remove();
+    $('.dog-image').classList.remove('dog-drop-ready','dog-drop-hover');
+    activeDrag = null;
+    card.dataset.dragged = 'false';
+  });
+}
+
+function isPointOverElement(x, y, element){
+  if(!element) return false;
+  const r = element.getBoundingClientRect();
+  return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
 }
 
 function openChoices(index){
   const item = items[index];
   $('#choiceTitle').textContent = `${item.name}を どう使う？`;
-  $('#choiceText').textContent = '使い方を選びましょう。できないことは灰色で出ます。';
+  $('#choiceText').textContent = state.pendingDrop ? 'ドラッグした場所に使います。使い方を選びましょう。' : '使い方を選びましょう。できないことは灰色で出ます。';
   const choiceList = $('#choiceList');
   choiceList.innerHTML = '';
   item.choices.forEach((choice)=>{
     const button = document.createElement('button');
     const label = choice[0];
+    const key = actionKey(item.name, label);
     const rule = getRule(item.name, label);
-    const available = isChoiceAvailable(rule);
+    const available = isChoiceAvailable(rule, key);
     button.textContent = available ? label : `${label}（できません）`;
     button.disabled = !available;
     if(!available) button.classList.add('choice-disabled');
-    button.addEventListener('click', ()=>applyChoice(choice, item.name));
+    button.addEventListener('click', ()=>applyChoice(choice, item.name, item.img));
     choiceList.appendChild(button);
   });
   $('#choiceModal').classList.remove('hidden');
 }
 
-function applyChoice(choice, itemName){
+function applyChoice(choice, itemName, itemImg){
   const [label, tempDelta, energyDelta, message, bgFromChoice] = choice;
+  const key = actionKey(itemName, label);
   const rule = getRule(itemName, label);
-  if(!isChoiceAvailable(rule)){
-    toast(rule?.unavailable || '今はその使い方はできません。');
+  if(!isChoiceAvailable(rule, key)){
+    toast(unavailableMessage(rule, key));
     return;
   }
 
   $('#choiceModal').classList.add('hidden');
   applyRule(rule);
+  state.usedActions.add(key);
 
   state.temp = Math.max(20, Math.min(40, state.temp + tempDelta));
   state.energy = Math.max(0, Math.min(100, state.energy + energyDelta));
@@ -250,8 +371,31 @@ function applyChoice(choice, itemName){
   const nextBg = backgroundForRoom(rule?.bg || bgFromChoice);
   $('#roomImage').src = bgPath + nextBg;
 
+  placeDroppedItem(itemImg || state.pendingDrop?.img, itemName, state.pendingDrop);
+  state.pendingDrop = null;
+
   toast(message);
   updateUI();
+}
+
+function placeDroppedItem(img, name, drop){
+  if(!img || !drop) return;
+  const layer = $('#placedItems');
+  const el = document.createElement('img');
+  el.className = 'placed-item';
+  el.src = itemPath + img;
+  el.alt = name || '';
+  const playRect = $('.play-area').getBoundingClientRect();
+  const x = Math.max(45, Math.min(playRect.width - 45, drop.x));
+  const y = Math.max(55, Math.min(playRect.height - 45, drop.y));
+  el.style.left = `${x}px`;
+  el.style.top = `${y}px`;
+  layer.appendChild(el);
+
+  // 画面が散らかりすぎないように、置いたアイテムは一定数だけ残す
+  while(layer.children.length > 7){
+    layer.firstElementChild.remove();
+  }
 }
 
 function updateUI(){
