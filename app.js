@@ -1,3 +1,11 @@
+window.addEventListener('error', (e)=>{
+  const t = document.querySelector('#toast');
+  if(t){
+    t.textContent = 'エラー：' + (e.message || '読み込みに失敗しました');
+    t.classList.remove('hidden');
+  }
+});
+
 
 const $ = s => document.querySelector(s);
 const itemGrid = $('#itemGrid');
@@ -19,6 +27,21 @@ const ITEMS = [
   {id:'blanket', name:'もうふ', emoji:'🛏️', choices:[['かける',{dog:'dog_with_blanket.png', temp:1, energy:-10, key:'blanket_dog'}]]},
   {id:'dryer', name:'ドライヤー', emoji:'💨', choices:[['れいふう',{dog:'dog_dryer_cool.png', temp:-1, energy:6, key:'dryer_cool'}],['おんぷう',{dog:'dog_dryer_hot.png', temp:2, energy:-10, key:'dryer_hot'}]]}
 ];
+
+
+const ITEM_PREVIEWS = {
+  water:'assets/dogs/actions/dog_drink_water.png',
+  tea:'assets/dogs/actions/dog_drink_iced_tea.png',
+  uchiwa:'assets/dogs/actions/dog_use_uchiwa.png',
+  fan:'assets/dogs/actions/dog_fan_cool.png',
+  towel:'assets/dogs/actions/dog_cold_towel.png',
+  icebag:'assets/dogs/actions/dog_ice_bag_lie.png',
+  aircon:'assets/dogs/actions/dog_aircon_cool.png',
+  window:'assets/dogs/actions/dog_window_open.png',
+  curtain:'assets/dogs/actions/dog_curtain_closed.png',
+  blanket:'assets/dogs/actions/dog_with_blanket.png',
+  dryer:'assets/dogs/actions/dog_dryer_cool.png'
+};
 
 const state = {
   player:'ななし',
@@ -47,7 +70,10 @@ function getItem(id){ return ITEMS.find(i => i.id===id); }
 function makeItemCard(item){
   const btn = document.createElement('button');
   btn.className = 'item-card';
-  btn.innerHTML = `<span class="emoji">${item.emoji}</span><span class="name">${item.name}</span>`;
+  const preview = ITEM_PREVIEWS[item.id];
+  btn.innerHTML = preview
+    ? `<div class="thumb"><img src="${preview}" alt="${item.name}"></div><span class="name">${item.name}</span>`
+    : `<span class="emoji">${item.emoji}</span><span class="name">${item.name}</span>`;
   btn.addEventListener('click', ()=>{ state.pendingDrop = {itemId:item.id, onDog:false, x:null, y:null}; openChoice(item); });
   setupItemDrag(btn, item);
   return btn;
@@ -141,7 +167,16 @@ function renderRoomSlot(slot, label, emoji, xPct, yPct){
     state.roomSlots[slot] = el;
     setupRoomCardDrag(el, slot);
   }
-  el.innerHTML = `<span class="emoji">${emoji}</span><span class="label">${label}</span>`;
+  const previewMap = {
+    fan: 'assets/dogs/actions/dog_fan_cool.png',
+    aircon: 'assets/dogs/actions/dog_aircon_cool.png',
+    window: 'assets/dogs/actions/dog_window_open.png',
+    curtain: 'assets/dogs/actions/dog_curtain_closed.png'
+  };
+  const img = previewMap[slot];
+  el.innerHTML = img
+    ? `<div class="room-thumb"><img src="${img}" alt="${label}"></div><span class="label">${label}</span>`
+    : `<span class="emoji">${emoji}</span><span class="label">${label}</span>`;
   el.style.left = `${xPct}%`;
   el.style.top = `${yPct}%`;
 }
@@ -231,12 +266,25 @@ function showRank(){
   $('#rankingModal').classList.remove('hidden');
 }
 
-$('#startBtn').addEventListener('click', ()=>{
-  state.player = $('#playerName').value.trim() || 'ななし';
+function startApp(){
+  const nameInput = $('#playerName');
+  state.player = (nameInput ? nameInput.value.trim() : '') || 'ななし';
   $('#playerLabel').textContent = state.player;
-  $('#startScreen').classList.add('hidden');
+  const screen = $('#startScreen');
+  if(screen) screen.classList.add('hidden');
   toast('スタート！');
-});
+}
+window.startApp = startApp;
+
+const startButton = $('#startBtn');
+if(startButton){
+  startButton.addEventListener('click', startApp);
+  startButton.addEventListener('touchend', (e)=>{ e.preventDefault(); startApp(); }, {passive:false});
+}
+const playerNameInput = $('#playerName');
+if(playerNameInput){
+  playerNameInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') startApp(); });
+}
 $('#cancelChoiceBtn').addEventListener('click', ()=>choiceModal.classList.add('hidden'));
 $('#saveScoreBtn').addEventListener('click', saveScore);
 $('#showRankBtn').addEventListener('click', showRank);
