@@ -1,109 +1,98 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>あついよ〜！わんこレスキュー</title>
-  <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <div id="startScreen" class="start-screen">
     <div class="start-card">
-      <img src="./assets/dogs/dog_happy.png" alt="元気なわんこ" />
-      <h1><span>あついよ〜！</span><br>わんこレスキュー</h1>
-      <p>なまえを入れて、今日のクールダウン対決をはじめよう！</p>
-      <label>プレイヤー名</label>
-      <input id="playerNameInput" type="text" maxlength="12" placeholder="なまえ" autocomplete="off" />
-      <button id="startButton" class="main-button">スタート</button>
+      <h1>あついよ〜！わんこレスキュー</h1>
+      <p>アイテムをドラッグして、わんこをすずしくしてあげよう。</p>
+      <input id="playerName" type="text" placeholder="ユーザー名" maxlength="20" />
+      <button id="startBtn">スタート</button>
     </div>
   </div>
 
-  <main id="app" class="app">
-    <header class="header">
-      <button id="homeButton" class="circle-button" aria-label="ホーム">
-        <span class="icon">🏠</span><span>ホーム</span>
-      </button>
-      <h1><span class="hot-text">あついよ〜！</span><span class="blue-text"> わんこ</span><span class="orange-text">レスキュー</span></h1>
-      <div class="header-buttons">
-        <button id="soundButton" class="circle-button" aria-label="音"><span class="icon">🔊</span><span>おと</span></button>
-        <button id="helpButton" class="circle-button pink" aria-label="ヘルプ"><span class="icon">?</span><span>ヘルプ</span></button>
-      </div>
+  <div class="app">
+    <header class="topbar">
+      <div class="title">あついよ〜！わんこレスキュー</div>
+      <div class="player">プレイヤー：<span id="playerLabel">ななし</span></div>
     </header>
 
-    <section class="play-area">
-      <img id="roomImage" class="room-image" src="./assets/backgrounds/room_hot.png" alt="部屋" />
-
-      <section class="temperature-panel panel">
-        <h2>きおん</h2>
-        <div class="temperature-content">
-          <div class="thermometer"><div id="thermoFill"></div></div>
-          <div class="temperature-number"><b id="temperatureValue">32</b><span>℃</span></div>
+    <main class="main">
+      <aside class="sidebar left">
+        <div class="panel thermobox">
+          <div class="panel-title">おへやの おんど</div>
+          <div class="temp"><span id="tempValue">32</span>℃</div>
         </div>
-        <p id="roomMessage">☀️ おへやが<br>とっても あついよ！</p>
-      </section>
+        <div class="panel energybox">
+          <div class="panel-title">わんこの げんき</div>
+          <div class="bar"><div id="energyBar"></div></div>
+          <div id="energyText" class="smalltext">とてもあつそう！</div>
+        </div>
+        <div class="panel scorebox">
+          <div class="panel-title">スコア</div>
+          <div class="score"><span id="scoreValue">0</span> 点</div>
+          <button id="saveScoreBtn" class="mini-btn">きろく</button>
+          <button id="showRankBtn" class="mini-btn">ランキング</button>
+        </div>
+      </aside>
 
-      <section class="energy-panel panel">
-        <h2>げんきメーター</h2>
-        <div class="meter-track"><div id="energyFill"></div><span id="meterFace">🐶</span></div>
-        <p id="energyMessage">とっても げんきが なくなっているよ！</p>
-      </section>
-
-      <section class="info-panel panel">
-        <div class="panel-tab">⭐ アイテム</div>
-        <p class="info-main">アイテムを<br>えらんで<br>わんこを<br>たすけよう！</p>
-        <p class="info-hint">💡 つかいかたで<br>けっかが かわるよ</p>
-      </section>
-
-      <section class="score-panel panel">
-        <div>プレイヤー：<b id="playerNameLabel">-</b></div>
-        <div>スコア：<b id="scoreValue">0</b>点</div>
-        <div class="score-buttons">
-          <button id="saveScoreButton">記録する</button>
-          <button id="rankingButton">ランキング</button>
+      <section class="play-wrap">
+        <div id="playArea" class="play-area">
+          <img class="room-bg" src="assets/backgrounds/room_main.png" alt="へや" />
+          <div id="roomOverlays" class="room-overlays"></div>
+          <img id="dogImage" class="dog-image" src="assets/dogs/base/dog_hot.png" alt="わんこ" />
+          <div id="speech" class="speech">あついよ〜</div>
+          <div id="trashBin" class="trash-bin">🗑️ ここにおくと けせる</div>
         </div>
       </section>
 
-      <div id="speechBubble" class="speech-bubble">あついよ〜</div>
-      <img id="dogImage" class="dog-image dog-hot" src="./assets/dogs/dog_hot.png" alt="暑そうなわんこ" />
-    </section>
+      <aside class="sidebar right">
+        <div class="panel tips">
+          <div class="panel-title">つかいかた</div>
+          <ul>
+            <li>アイテムをドラッグしよう</li>
+            <li>わんこにわたすと、まんなかのわんこが入れかわる</li>
+            <li>へやの道具は、へやにおいてつかえる</li>
+            <li>おいた道具は、ゴミばこへドラッグでけせる</li>
+          </ul>
+        </div>
+        <div class="panel dogbtns">
+          <div class="panel-title">わんこ</div>
+          <button id="resetDogBtn" class="mini-btn wide">わんこを もどす</button>
+          <button id="resetAllBtn" class="mini-btn wide">ぜんぶ もどす</button>
+        </div>
+      </aside>
+    </main>
 
-    <section id="itemDrawer" class="item-drawer open">
-      <div class="drawer-title-row">
-        <button id="toggleDrawerButton" class="drawer-tab">アイテム ▲</button>
-        <span>アイテムをドラッグして、わんこの上ではなすと使えます。タップでもOK。</span>
-      </div>
-      <div id="itemGrid" class="item-grid" aria-label="アイテム一覧"></div>
+    <section class="drawer">
+      <div class="drawer-title">アイテム</div>
+      <div id="itemGrid" class="item-grid"></div>
     </section>
-  </main>
+  </div>
 
-  <div id="choiceModal" class="modal hidden" role="dialog" aria-modal="true">
+  <div id="choiceModal" class="modal hidden">
     <div class="modal-card">
-      <h2 id="choiceTitle">どう使う？</h2>
-      <p id="choiceText">使い方を選びましょう。</p>
+      <h2 id="choiceTitle">どうつかう？</h2>
+      <p id="choiceText">つかいかたをえらぼう</p>
       <div id="choiceList" class="choice-list"></div>
-      <button id="cancelChoiceButton" class="sub-button">やめる</button>
+      <button id="cancelChoiceBtn" class="mini-btn wide">キャンセル</button>
+    </div>
+  </div>
+
+  <div id="rankingModal" class="modal hidden">
+    <div class="modal-card">
+      <h2>きょうのランキング</h2>
+      <ol id="rankList"></ol>
+      <button id="closeRankBtn" class="mini-btn wide">とじる</button>
     </div>
   </div>
 
   <div id="toast" class="toast hidden"></div>
-
-  <div id="rankingModal" class="modal hidden" role="dialog" aria-modal="true">
-    <div class="modal-card ranking-card">
-      <h2>今日のランキング</h2>
-      <ol id="rankingList"></ol>
-      <button id="closeRankingButton" class="main-button">とじる</button>
-    </div>
-  </div>
-
-  <div id="helpModal" class="modal hidden" role="dialog" aria-modal="true">
-    <div class="modal-card help-card">
-      <h2>あそびかた</h2>
-      <p>① アイテムをえらぶ<br>② どう使うかえらぶ<br>③ わんこの様子・温度・げんきを見る</p>
-      <p>同じアイテムでも、使い方で結果が変わります。</p>
-      <button id="closeHelpButton" class="main-button">わかった</button>
-    </div>
-  </div>
-
-  <script src="./app.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
